@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ロボット感情表現実験</title>
+    <style>
+        /* ====================
+        全体レイアウト
+        ==================== */
+        /* body全体の設定 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            text-align: center;
+        }
+        /* ロボットとコントロールパネルのコンテナ */
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 20px;
+        }
+
+        /* タイマーコンテナのスタイル */
+        .timer-container {
+            position: fixed; /* 画面に固定 */
+            top: 20px; /* 上からの距離 */
+            right: 20px; /* 右からの距離 */
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 1.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            z-index: 1000; /* 他の要素より手前に表示 */
+        }
+
+
+        /* ====================
+        ロボットのデザイン
+        ==================== */
+        /* ロボット全体のコンテナ */
+        .robot {
+            width: 300px;
+            height: 400px;
+            position: relative;
+            background-image: url('robot_body.png'); /* 3D画像を背景に設定 */
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 50px;
+        }
+
+        /* 顔、胴体、鼻は画像に置き換えるため、既存の要素は非表示または削除 */
+        .head, .body, .nose {
+            display: none;
+        }
+        
+        /* 目の位置とサイズ調整 */
+        .eyes {
+            position: absolute;
+            top: 120px; /* 目の位置を調整 */
+            left: 51.5%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 46px; /* 目と目の間の間隔 */
+        }
+        /* 個々の目全体（LED消灯時のグレー部分） */
+        .eye {
+            width: 32px;
+            height: 32px;
+            background-color: #808080; /* LED消灯部分（グレー）を常に表示 */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        /* LED点灯部分 */
+        .led {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-sizing: border-box;
+            animation-duration: 1s;
+            animation-duration: var(--animation-duration); /* CSS変数を適用 */
+            animation-iteration-count: infinite; /* アニメーションを無限に繰り返す */
+            animation-timing-function: linear; /* 速度を一定にする */
+            position: absolute; /* 親要素の.eyeに対して絶対配置 */
+            top: 0; left: 0;
+        }
+        /* 黒目（瞳孔） */
+        .eye::after {
+            content: '';
+            width: 26px;
+            height: 26px;
+            background-color: rgb(30, 30, 30);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* 目のハイライト（擬似要素で表現） */
+        .eye::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%); /* 中心が白く、外側が透明になるグラデーション */
+            border-radius: 50%;
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        /* ====================
+        コントロールパネル
+        ==================== */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-group label {
+            font-weight: bold;
+        }
+        
+        /* 色相環の配置スタイル */
+        .color-options {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+        }
+        .color-options button {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* ====================
+        LEDアニメーションの定義
+        ==================== */
+        /* 点滅アニメーション（瞬間的な ON/OFF） */
+        @keyframes step-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+        /* 点滅アニメーション（滑らかなON/OFF） */
+        @keyframes fade-blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+        /* 回転アニメーション（時計回り） */
+        @keyframes rotate-sector {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 回転アニメーション（反時計回り） */
+        @keyframes rotate-sector-reverse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+
+        /* 下へ流れるアニメーション（左右分割） */
+        @keyframes split-drop-left {
+            0% {
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: rotate(-180deg); }
+            55% { opacity: 0; }
+            100% {
+                opacity: 0;
+                transform: rotate(-360deg);
+            }
+        }
+        @keyframes split-drop-right {
+            0% {
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: rotate(180deg); }
+            55% { opacity: 0; }
+            100% {
+                opacity: 0;
+                transform: rotate(360deg);
+            }
+        }
+        /* split-dropパターン選択時のLEDに疑似要素を追加 */
+        .led.split-drop {
+            border: none;
+            position: relative; /* 疑似要素の基準となるように設定 */
+            /* 疑似要素と重ねて表示するために、背景を透明に */
+            background: transparent !important;
+        }
+        /* ::before 疑似要素に左回転アニメーションを適用 */
+        .led.split-drop::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            animation-name: split-drop-left;
+            animation-duration: var(--animation-duration); /* JSから変数を受け取る */
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+            background-image: var(--split-drop-gradient); /* JSからグラデーションを受け取る */
+        }
+        /* ::after 疑似要素に右回転アニメーションを適用 */
+        .led.split-drop::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            animation-name: split-drop-right;
+            animation-duration: var(--animation-duration); /* JSから変数を受け取る */
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+            background-image: var(--split-drop-gradient); /* JSからグラデーションを受け取る */
+        }
+
+        /* 上へ流れるアニメーション（左右分割） */
+        @keyframes split-up-left {
+            0% {
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: rotate(180deg);
+            }
+            55% { opacity: 0; }
+            100% {
+                opacity: 0;
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes split-up-right {
+            0% {
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: rotate(-180deg);
+            }
+            55% { opacity: 0; }
+            100% {
+                opacity: 0;
+                transform: rotate(-360deg);
+            }
+        }
+        /* split-up パターン選択時のLEDスタイルを追加 */
+        .led.split-up {
+            border: none;
+            position: relative;
+            background: transparent !important;
+        }
+        /* ::before 疑似要素に左回転アニメーションを適用 */
+        .led.split-up::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            animation-name: split-up-left;
+            animation-duration: var(--animation-duration);
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+            background-image: var(--split-up-gradient);
+        }
+        /* ::after 疑似要素に右回転アニメーションを適用 */
+        .led.split-up::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            animation-name: split-up-right;
+            animation-duration: var(--animation-duration);
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+            background-image: var(--split-up-gradient);
+        }
+        
+        .led.rotate, .led.split-drop, .led.split-up {
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>ロボット感情表現実験</h1>
+    <p>このロボットの目が「googleフォームに記載している感情」を表現するように設定してください。</p>
+
+    <div class="timer-container" id="timer-container">
+        <span id="timer-display">00:00</span>
+    </div>
+
+    <div class="container">
+        <div class="robot">
+            <div class="eyes">
+                <div class="eye">
+                    <div class="led" id="left-eye-led"></div>
+                </div>
+                <div class="eye">
+                    <div class="led" id="right-eye-led"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="color">色</label>
+                <div class="color-options">
+                    </div>
+            </div>
+            <hr>
+            <div class="control-group">
+                <label for="pattern">発光パターン</label>
+                <select id="pattern" onchange="setPattern()">
+                    <option value="step-blink">点滅（チカチカ）</option>
+                    <option value="fade-blink">点滅（滑らか）</option>
+                    <option value="rotate">回転（回転方向一致）</option>
+                    <option value="asymmetric-rotate">回転（回転方向不一致）</option>
+                    <option value="split-drop">下へ流れる</option>
+                    <option value="split-up">上へ流れる</option>
+                </select>
+            </div>
+            <hr>
+            <div class="control-group">
+                <label for="intensity">速さ (<span id="intensity-value">3</span>)</label>
+                <input type="range" id="intensity" min="1" max="5" value="3" oninput="setIntensity()">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM要素の取得: ロボットの目のLEDと操作パネル
+        const leftEyeLed = document.getElementById('left-eye-led');
+        const rightEyeLed = document.getElementById('right-eye-led');
+        const intensityValueSpan = document.getElementById('intensity-value');
+        let currentColor = 'red'; // 現在選択されている色を保持する変数
+        const colorOptionsDiv = document.querySelector('.color-options');
+
+        // 使用する色の定義
+        const colors = [
+            'red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta'
+        ];
+
+        // 各色のRGBA値を定義
+        const colorMap = {
+            'red': 'rgba(255, 0, 0, 1)',
+            'orange': 'rgba(255, 165, 0, 1)',
+            'yellow': 'rgba(255, 255, 0, 1)',
+            'green': 'rgba(0, 128, 0, 1)',
+            'cyan': 'rgba(0, 255, 255, 1)',
+            'blue': 'rgba(0, 0, 255, 1)',
+            'purple': 'rgba(128, 0, 128, 1)',
+            'magenta': 'rgba(255, 0, 255, 1)'
+        };
+
+        /**
+         * 色選択ボタンを色相環状に配置する関数
+         * この関数は、`colors`配列に基づいて動的にボタンを生成します。
+         */
+        function positionColorButtons() {
+            const radius = 65; // 円の半径
+            const totalColors = colors.length;
+            const angleIncrement = (2 * Math.PI) / totalColors; // 角度の増分
+
+            colors.forEach((color, index) => {
+                const angle = index * angleIncrement - Math.PI / 2; // 上から開始するために調整
+                const x = radius * Math.cos(angle);
+                const y = radius * Math.sin(angle);
+
+                const button = document.createElement('button');
+                button.className = color;
+                button.style.backgroundColor = color;
+                button.style.position = 'absolute';
+                button.style.left = `calc(50% + ${x}px)`;
+                button.style.top = `calc(50% + ${y}px)`;
+                button.style.transform = 'translate(-50%, -50%)';
+                button.onclick = () => setColor(color); // クリックイベントを設定
+                colorOptionsDiv.appendChild(button);
+            });
+        }
+
+        /**
+         * LEDの表示を更新するメイン関数
+         * ユーザーの選択に応じて、LEDのスタイルとアニメーションを適用します。
+         * @param {string} color - 選択された色
+         * @param {string} pattern - 選択されたパターン
+         * @param {number} intensity - 選択された強度
+         */
+        function updateLeds(color, pattern, intensity) {
+            const duration = 0.2 * (6 - intensity);
+
+            // すべてのスタイルをリセット
+            // これにより、以前のアニメーションやスタイルが残るのを防ぎます。
+            leftEyeLed.style.cssText = '';
+            rightEyeLed.style.cssText = '';
+            leftEyeLed.style.animationName = 'none';
+            rightEyeLed.style.animationName = 'none';
+            leftEyeLed.classList.remove('rotate', 'split-drop', 'split-up');
+            rightEyeLed.classList.remove('rotate', 'split-drop', 'split-up');
+            
+            // 疑似要素のスタイルをリセットするための処理
+            leftEyeLed.style.setProperty('--split-drop-gradient', '');
+            rightEyeLed.style.setProperty('--split-drop-gradient', '');
+            leftEyeLed.style.removeProperty('--split-up-gradient');
+            rightEyeLed.style.removeProperty('--split-up-gradient');
+            leftEyeLed.style.setProperty('--animation-duration', '');
+            rightEyeLed.style.setProperty('--animation-duration', '');
+
+            // わずかな遅延を挟んでから、新しいアニメーションを適用
+            void leftEyeLed.offsetWidth; // 強制的にリフローを発生させる
+            void rightEyeLed.offsetWidth; // 強制的にリフローを発生させる
+            
+            const rgbaColor = colorMap[color];
+            
+            // --- 各発光パターンの処理 ---
+            if (pattern === 'step-blink') {
+                // 点滅（断続）: 透明度を瞬間的に切り替えて点滅を表現
+                leftEyeLed.style.backgroundColor = rgbaColor;
+                rightEyeLed.style.backgroundColor = rgbaColor;
+                leftEyeLed.style.border = `4px solid ${color}`;
+                rightEyeLed.style.border = `4px solid ${color}`;
+                leftEyeLed.style.animationName = 'step-blink';
+                rightEyeLed.style.animationName = 'step-blink';
+            } else if (pattern === 'fade-blink') {
+                // 点滅（滑らか）: 透明度を滑らかに変化させてフェードイン・アウトを表現
+                leftEyeLed.style.backgroundColor = rgbaColor;
+                rightEyeLed.style.backgroundColor = rgbaColor;
+                leftEyeLed.style.border = `4px solid ${color}`;
+                rightEyeLed.style.border = `4px solid ${color}`;
+                leftEyeLed.style.animationName = 'fade-blink';
+                rightEyeLed.style.animationName = 'fade-blink';
+            } else if (pattern === 'rotate' || pattern === 'asymmetric-rotate') {
+                // 回転パターン: conic-gradientで光る扇形を表現
+                const conicGradient = `conic-gradient(from -65deg, ${rgbaColor} 0deg, ${rgbaColor} 130deg, transparent 130deg 360deg)`;
+                leftEyeLed.style.backgroundImage = conicGradient;
+                rightEyeLed.style.backgroundImage = conicGradient;
+                leftEyeLed.classList.add('rotate');
+                rightEyeLed.classList.add('rotate');
+                // 回転方向を決定
+                if (pattern === 'rotate') {
+                    leftEyeLed.style.animationName = 'rotate-sector';
+                    rightEyeLed.style.animationName = 'rotate-sector';
+                } else if (pattern === 'asymmetric-rotate') {
+                    leftEyeLed.style.animationName = 'rotate-sector-reverse';
+                    rightEyeLed.style.animationName = 'rotate-sector';
+                }
+            } else if (pattern === 'split-drop') {
+                // 下へ流れる（左右分割）
+                leftEyeLed.classList.add('split-drop');
+                rightEyeLed.classList.add('split-drop');
+                // conic-gradientの定義
+                const splitGradient = `
+                    conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
+                    conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
+                `;
+                // CSS変数を設定
+                leftEyeLed.style.setProperty('--split-drop-gradient', splitGradient);
+                rightEyeLed.style.setProperty('--split-drop-gradient', splitGradient);
+                leftEyeLed.style.setProperty('--animation-duration', duration + 's');
+                rightEyeLed.style.setProperty('--animation-duration', duration + 's');
+            } else if (pattern === 'split-up') {
+                // 上へ流れる（左右分割）
+                leftEyeLed.classList.add('split-up');
+                rightEyeLed.classList.add('split-up');
+                // conic-gradientの開始位置を真下（90deg）に設定
+                const upGradient = `
+                    conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
+                    conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
+                `;
+                // CSS変数を設定
+                leftEyeLed.style.setProperty('--split-up-gradient', upGradient);
+                rightEyeLed.style.setProperty('--split-up-gradient', upGradient);
+                leftEyeLed.style.setProperty('--animation-duration', duration + 's');
+                rightEyeLed.style.setProperty('--animation-duration', duration + 's');
+            }
+
+            // 共通のアニメーション設定
+            leftEyeLed.style.animationDuration = duration + 's';
+            rightEyeLed.style.animationDuration = duration + 's';
+            leftEyeLed.style.animationPlayState = 'running';
+            rightEyeLed.style.animationPlayState = 'running';
+        }
+
+        /** 色選択ボタンがクリックされた時の処理 */
+        function setColor(color) {
+            currentColor = color;
+            const currentPattern = document.getElementById('pattern').value;
+            const currentIntensity = document.getElementById('intensity').value;
+            updateLeds(currentColor, currentPattern, currentIntensity);
+        }
+
+        /** パターンが変更された時の処理 */
+        function setPattern() {
+            const currentIntensity = document.getElementById('intensity').value;
+            updateLeds(currentColor, document.getElementById('pattern').value, currentIntensity);
+        }
+
+        /** 強度が変更された時の処理 */
+        function setIntensity() {
+            const currentPattern = document.getElementById('pattern').value;
+            const currentIntensity = document.getElementById('intensity').value;
+            intensityValueSpan.textContent = currentIntensity;
+            updateLeds(currentColor, currentPattern, currentIntensity);
+        }
+
+        // ====================================================
+    // ページの初期化処理とタイマー機能の修正
+    // ====================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // DOM要素の取得をこの中に入れる
+        const timerDisplay = document.getElementById('timer-display');
+        let seconds = 0;
+        let minutes = 0;
+        let timerInterval;
+
+        /**
+         * 時間を「00:00」形式にフォーマットする関数
+         */
+        function formatTime(num) {
+            return num < 10 ? `0${num}` : num;
+        }
+
+        /**
+         * 1秒ごとにタイマーを更新する関数
+         */
+        function updateTimer() {
+            seconds++;
+            if (seconds === 60) {
+                seconds = 0;
+                minutes++;
+            }
+            const formattedMinutes = formatTime(minutes);
+            const formattedSeconds = formatTime(seconds);
+            timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
+        }
+
+        /**
+         * タイマーを開始する関数
+         */
+        function startTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        // 初期処理とタイマーの開始
+        positionColorButtons(); // 色ボタンの配置
+        updateLeds('red', 'fade-blink', 3); // 初期表示
+        startTimer(); // タイマーの開始
+    });
+    </script>
+</body>
+</html>
