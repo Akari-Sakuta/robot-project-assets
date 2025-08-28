@@ -1,0 +1,316 @@
+/* ====================
+全体レイアウト
+==================== */
+/* body全体の設定 */
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    margin: 0;
+    text-align: center;
+}
+/* ロボットとコントロールパネルのコンテナ */
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 50px;
+    margin-top: 20px;
+}
+
+/* タイマーコンテナのスタイル */
+.timer-container {
+    position: fixed; /* 画面に固定 */
+    top: 20px; /* 上からの距離 */
+    right: 20px; /* 右からの距離 */
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-size: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    z-index: 1000; /* 他の要素より手前に表示 */
+}
+
+
+/* ====================
+ロボットのデザイン
+==================== */
+/* ロボット全体のコンテナ */
+.robot {
+    width: 300px;
+    height: 400px;
+    position: relative;
+    background-image: url('https://raw.githubusercontent.com/Akari-Sakuta/robot-project-assets/main/robot_body.png'); /* 3D画像を背景に設定 */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 50px;
+}
+
+/* 顔、胴体、鼻は画像に置き換えるため、既存の要素は非表示または削除 */
+.head, .body, .nose {
+    display: none;
+}
+
+/* 目の位置とサイズ調整 */
+.eyes {
+    position: absolute;
+    top: 120px; /* 目の位置を調整 */
+    left: 51.5%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 46px; /* 目と目の間の間隔 */
+}
+/* 個々の目全体（LED消灯時のグレー部分） */
+.eye {
+    width: 32px;
+    height: 32px;
+    background-color: #808080; /* LED消灯部分（グレー）を常に表示 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+/* LED点灯部分 */
+.led {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-sizing: border-box;
+    animation-duration: 1s;
+    animation-duration: var(--animation-duration); /* CSS変数を適用 */
+    animation-iteration-count: infinite; /* アニメーションを無限に繰り返す */
+    animation-timing-function: linear; /* 速度を一定にする */
+    position: absolute; /* 親要素の.eyeに対して絶対配置 */
+    top: 0; left: 0;
+}
+/* 黒目（瞳孔） */
+.eye::after {
+    content: '';
+    width: 26px;
+    height: 26px;
+    background-color: rgb(30, 30, 30);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* 目のハイライト（擬似要素で表現） */
+.eye::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%); /* 中心が白く、外側が透明になるグラデーション */
+    border-radius: 50%;
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+/* ====================
+コントロールパネル
+==================== */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+}
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.control-group label {
+    font-weight: bold;
+}
+
+/* 色相環の配置スタイル */
+.color-options {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 20px auto;
+}
+.color-options button {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* ====================
+LEDアニメーションの定義
+==================== */
+/* 点滅アニメーション（瞬間的な ON/OFF） */
+@keyframes step-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+/* 点滅アニメーション（滑らかなON/OFF） */
+@keyframes fade-blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+/* 回転アニメーション（時計回り） */
+@keyframes rotate-sector {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+/* 回転アニメーション（反時計回り） */
+@keyframes rotate-sector-reverse {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-360deg); }
+}
+
+/* 下へ流れるアニメーション（左右分割） */
+@keyframes split-drop-left {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(-180deg); }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(-360deg);
+    }
+}
+@keyframes split-drop-right {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(180deg); }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(360deg);
+    }
+}
+/* split-dropパターン選択時のLEDに疑似要素を追加 */
+.led.split-drop {
+    border: none;
+    position: relative; /* 疑似要素の基準となるように設定 */
+    /* 疑似要素と重ねて表示するために、背景を透明に */
+    background: transparent !important;
+}
+/* ::before 疑似要素に左回転アニメーションを適用 */
+.led.split-drop::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation-name: split-drop-left;
+    animation-duration: var(--animation-duration); /* JSから変数を受け取る */
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-drop-gradient); /* JSからグラデーションを受け取る */
+}
+/* ::after 疑似要素に右回転アニメーションを適用 */
+.led.split-drop::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation-name: split-drop-right;
+    animation-duration: var(--animation-duration); /* JSから変数を受け取る */
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-drop-gradient); /* JSからグラデーションを受け取る */
+}
+
+/* 上へ流れるアニメーション（左右分割） */
+@keyframes split-up-left {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(180deg);
+    }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(360deg);
+    }
+}
+@keyframes split-up-right {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(-180deg);
+    }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(-360deg);
+    }
+}
+/* split-up パターン選択時のLEDスタイルを追加 */
+.led.split-up {
+    border: none;
+    position: relative;
+    background: transparent !important;
+}
+/* ::before 疑似要素に左回転アニメーションを適用 */
+.led.split-up::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    animation-name: split-up-left;
+    animation-duration: var(--animation-duration);
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-up-gradient);
+}
+/* ::after 疑似要素に右回転アニメーションを適用 */
+.led.split-up::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    animation-name: split-up-right;
+    animation-duration: var(--animation-duration);
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-up-gradient);
+}
+
+.led.rotate, .led.split-drop, .led.split-up {
+    border: none;
+}
