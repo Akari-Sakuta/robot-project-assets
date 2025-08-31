@@ -2,8 +2,19 @@
 const leftEyeLed = document.getElementById('left-eye-led');
 const rightEyeLed = document.getElementById('right-eye-led');
 const intensityValueSpan = document.getElementById('intensity-value');
-let currentColor = 'red'; // 現在選択されている色を保持する変数
+let currentColor = '#808080'; // 現在選択されている色を保持する変数
 const colorOptionsDiv = document.querySelector('.color-options');
+
+// 選択項目を保持するグローバル変数
+// 初期値は、ページの初期表示値に合わせて設定する
+let selectedColorIndex = 1;
+let selectedPatternIndex = 2; // fade-blinkは2番目
+let selectedIntensityIndex = 3;
+
+// これにより、returnToMainPage関数からアクセスできるようになります。
+let seconds = 0;
+let minutes = 0;
+let timerInterval;
 
 // 使用する色の定義
 const colors = [
@@ -43,7 +54,7 @@ function positionColorButtons() {
         button.style.left = `calc(50% + ${x}px)`;
         button.style.top = `calc(50% + ${y}px)`;
         button.style.transform = 'translate(-50%, -50%)';
-        button.onclick = () => setColor(color); // クリックイベントを設定
+        button.onclick = () => setColor(color, index); // クリックイベントを設定
         colorOptionsDiv.appendChild(button);
     });
 }
@@ -59,7 +70,6 @@ function updateLeds(color, pattern, intensity) {
     const duration = 0.2 * (6 - intensity);
 
     // すべてのスタイルをリセット
-    // これにより、以前のアニメーションやスタイルが残るのを防ぎます。
     leftEyeLed.style.cssText = '';
     rightEyeLed.style.cssText = '';
     leftEyeLed.style.animationName = 'none';
@@ -68,12 +78,12 @@ function updateLeds(color, pattern, intensity) {
     rightEyeLed.classList.remove('rotate', 'split-drop', 'split-up');
     
     // 疑似要素のスタイルをリセットするための処理
-    leftEyeLed.style.setProperty('--split-drop-gradient', '');
-    rightEyeLed.style.setProperty('--split-drop-gradient', '');
+    leftEyeLed.style.removeProperty('--split-drop-gradient');
+    rightEyeLed.style.removeProperty('--split-drop-gradient');
     leftEyeLed.style.removeProperty('--split-up-gradient');
     rightEyeLed.style.removeProperty('--split-up-gradient');
-    leftEyeLed.style.setProperty('--animation-duration', '');
-    rightEyeLed.style.setProperty('--animation-duration', '');
+    leftEyeLed.style.removeProperty('--animation-duration');
+    rightEyeLed.style.removeProperty('--animation-duration');
 
     // わずかな遅延を挟んでから、新しいアニメーションを適用
     void leftEyeLed.offsetWidth; // 強制的にリフローを発生させる
@@ -142,45 +152,116 @@ function updateLeds(color, pattern, intensity) {
         leftEyeLed.style.setProperty('--animation-duration', duration + 's');
         rightEyeLed.style.setProperty('--animation-duration', duration + 's');
     }
-
+    
     // 共通のアニメーション設定
     leftEyeLed.style.animationDuration = duration + 's';
-    rightEyeLed.style.animationDuration = duration + 's';
+    rightEyeLed.style.animationDuration = duration + 's';
     leftEyeLed.style.animationPlayState = 'running';
     rightEyeLed.style.animationPlayState = 'running';
 }
 
-/** 色選択ボタンがクリックされた時の処理 */
-function setColor(color) {
+/**
+ * 色選択ボタンがクリックされた時の処理
+ * @param {string} color - 選択された色の名前
+ * @param {number} index - 0から始まるインデックス
+ */
+function setColor(color, index) { 
     currentColor = color;
+    selectedColorIndex = index + 1; // 1から始まる番号に変換
     const currentPattern = document.getElementById('pattern').value;
     const currentIntensity = document.getElementById('intensity').value;
-    updateLeds(currentColor, currentPattern, currentIntensity);
-}
-
-/** パターンが変更された時の処理 */
-function setPattern() {
-    const currentIntensity = document.getElementById('intensity').value;
-    updateLeds(currentColor, document.getElementById('pattern').value, currentIntensity);
-}
-
-/** 強度が変更された時の処理 */
-function setIntensity() {
-    const currentPattern = document.getElementById('pattern').value;
-    const currentIntensity = document.getElementById('intensity').value;
-    intensityValueSpan.textContent = currentIntensity;
     updateLeds(currentColor, currentPattern, currentIntensity);
 }
 
 /**
- * ページの初期化処理とタイマー機能の修正
+ * パターンが変更された時の処理
  */
+function setPattern() {
+    const patternSelect = document.getElementById('pattern');
+    const currentPattern = patternSelect.value;
+    const currentIntensity = document.getElementById('intensity').value;
+    selectedPatternIndex = patternSelect.selectedIndex + 1; // 1から始まる番号に変換
+    updateLeds(currentColor, currentPattern, currentIntensity);
+}
+
+/**
+ * 強度が変更された時の処理
+ */
+function setIntensity() {
+    const currentPattern = document.getElementById('pattern').value;
+    const currentIntensity = document.getElementById('intensity').value;
+    selectedIntensityIndex = currentIntensity;
+    intensityValueSpan.textContent = currentIntensity;
+    updateLeds(currentColor, currentPattern, currentIntensity);
+}
+
+// 終了ボタンのDOM要素を取得
+const endButton = document.getElementById('end-button');
+const resultsPage = document.getElementById('results-page');
+
+// 終了ボタンがクリックされた時の処理
+endButton.addEventListener('click', () => {
+    clearInterval(timerInterval); // タイマーを停止
+    showResultsPage();
+});
+
+// 結果ページを表示する関数
+function showResultsPage() {
+    // 全ての主要なUIを非表示にする
+    document.querySelector('h1').style.display = 'none';
+    document.querySelector('p').style.display = 'none';
+    document.getElementById('timer-container').style.display = 'none';
+    document.getElementById('end-button-container').style.display = 'none';
+    document.querySelector('.container').style.display = 'none';
+
+    // 結果ページを表示
+    resultsPage.style.display = 'flex';
+
+    // 選択された項目を次のページに表示
+    document.getElementById('result-color').textContent = selectedColorIndex;
+    document.getElementById('result-pattern').textContent = selectedPatternIndex;
+    document.getElementById('result-intensity').textContent = selectedIntensityIndex;
+}
+
+/**
+ * メインページに戻る関数
+ */
+function returnToMainPage() {
+    // 結果ページを非表示にする
+    document.getElementById('results-page').style.display = 'none';
+
+    // メインページの要素を表示する
+    document.querySelector('h1').style.display = 'block';
+    document.querySelector('p').style.display = 'block';
+    document.getElementById('timer-container').style.display = 'block';
+    document.getElementById('end-button-container').style.display = 'block';
+    document.querySelector('.container').style.display = 'flex';
+
+    // タイマーをリセットして再開
+    seconds = 0; // seconds変数をリセット
+    minutes = 0; // minutes変数をリセット
+    document.getElementById('timer-display').textContent = '00:00'; // 表示をリセット
+    startTimer(); // タイマーを再開
+
+    // 終了ボタンを非表示にする
+    document.getElementById('end-button').style.display = 'none';
+}
+
+// ページの初期化処理とタイマー機能
 document.addEventListener('DOMContentLoaded', () => {
     // DOM要素の取得をこの中に入れる
     const timerDisplay = document.getElementById('timer-display');
-    let seconds = 0;
-    let minutes = 0;
-    let timerInterval;
+    const endButton = document.getElementById('end-button'); // 終了ボタンのDOM要素を取得
+    const resultsPage = document.getElementById('results-page'); // 結果ページもここで取得
+    const resultColorSpan = document.getElementById('result-color');
+    const resultPatternSpan = document.getElementById('result-pattern');
+    const resultIntensitySpan = document.getElementById('result-intensity');
+    const nextTaskButton = document.getElementById('next-task-button'); // 「次のタスクへ」ボタンを取得
+
+    //let seconds = 0;
+    //let minutes = 0;
+
+    //let timerInterval;
 
     // 時間を「00:00」形式にフォーマットする関数
     function formatTime(num) {
@@ -196,6 +277,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const formattedMinutes = formatTime(minutes);
         const formattedSeconds = formatTime(seconds);
         timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
+
+        // 1分経過（60秒）後に終了ボタンを表示する
+        // 今はテスト用に2秒
+        if (seconds >= 2 && endButton.style.display === 'none') {
+            endButton.style.display = 'block';
+        }
     }
     // タイマーを開始する関数
     function startTimer() {
@@ -204,6 +291,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         timerInterval = setInterval(updateTimer, 1000);
     }
+
+    // 終了ボタンがクリックされた時の処理
+    endButton.addEventListener('click', () => {
+        clearInterval(timerInterval); // タイマーを停止
+        showResultsPage();
+    });
+
+    // 「次のタスクへ」ボタンがクリックされた時の処理
+    nextTaskButton.addEventListener('click', () => {
+        returnToMainPage();
+    });
 
     // 初期処理とタイマーの開始
     positionColorButtons(); // 色ボタンの配置
