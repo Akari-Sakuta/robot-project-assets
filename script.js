@@ -5,17 +5,6 @@ const intensityValueSpan = document.getElementById('intensity-value');
 let currentColor = '#808080'; // 現在選択されている色を保持する変数
 const colorOptionsDiv = document.querySelector('.color-options');
 
-// 選択項目を保持するグローバル変数
-// 初期値は、ページの初期表示値に合わせて設定する
-let selectedColorIndex = 1;
-let selectedPatternIndex = 2; // fade-blinkは2番目
-let selectedIntensityIndex = 3;
-
-// これにより、returnToMainPage関数からアクセスできるようになります。
-let seconds = 0;
-let minutes = 0;
-let timerInterval;
-
 // 使用する色の定義
 const colors = [
     'red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta'
@@ -32,6 +21,32 @@ const colorMap = {
     'purple': 'rgba(128, 0, 128, 1)',
     'magenta': 'rgba(255, 0, 255, 1)'
 };
+
+// 選択項目を保持するグローバル変数
+// 初期値は、ページの初期表示値に合わせて設定する
+let selectedColorIndex = 1;
+let selectedPatternIndex = 1;
+let selectedIntensityIndex = 3;
+
+// DOM要素の取得: タイマー機能
+const timerDisplay = document.getElementById('timer-display');
+let seconds = 0;
+let minutes = 0;
+let timerInterval;
+
+// DOM要素の取得: 進捗の保存
+let currentSet = 1;
+const totalSets = 10;
+
+// DOM要素の取得: 結果の表示画面
+const resultsPage = document.getElementById('results-page');
+const resultColorSpan = document.getElementById('result-color');
+const resultPatternSpan = document.getElementById('result-pattern');
+const resultIntensitySpan = document.getElementById('result-intensity');
+
+// DOM要素の取得: 終了ボタンと次のタスクへボタン
+const endButton = document.getElementById('end-button');
+const nextTaskButton = document.getElementById('next-task-button'); 
 
 /**
  * 色選択ボタンを色相環状に配置する関数
@@ -195,41 +210,10 @@ function setIntensity() {
     updateLeds(currentColor, currentPattern, currentIntensity);
 }
 
-// 終了ボタンのDOM要素を取得
-const endButton = document.getElementById('end-button');
-const resultsPage = document.getElementById('results-page');
-
-// 終了ボタンがクリックされた時の処理
-endButton.addEventListener('click', () => {
-    clearInterval(timerInterval); // タイマーを停止
-    showResultsPage();
-});
-
-// 結果ページを表示する関数
-function showResultsPage() {
-    // 全ての主要なUIを非表示にする
-    document.querySelector('h1').style.display = 'none';
-    document.querySelector('p').style.display = 'none';
-    document.getElementById('timer-container').style.display = 'none';
-    document.getElementById('end-button-container').style.display = 'none';
-    document.querySelector('.container').style.display = 'none';
-
-    // 結果ページを表示
-    resultsPage.style.display = 'flex';
-
-    // 選択された項目を次のページに表示
-    document.getElementById('result-color').textContent = selectedColorIndex;
-    document.getElementById('result-pattern').textContent = selectedPatternIndex;
-    document.getElementById('result-intensity').textContent = selectedIntensityIndex;
-}
-
 /**
- * メインページに戻る関数
+ * ページの初期状態をリセットし、メインページを開始する関数
  */
-function returnToMainPage() {
-    // 結果ページを非表示にする
-    document.getElementById('results-page').style.display = 'none';
-
+function startMainPage() {
     // メインページの要素を表示する
     document.querySelector('h1').style.display = 'block';
     document.querySelector('p').style.display = 'block';
@@ -237,74 +221,120 @@ function returnToMainPage() {
     document.getElementById('end-button-container').style.display = 'block';
     document.querySelector('.container').style.display = 'flex';
 
+    // 結果ページを非表示にする
+    document.getElementById('results-page').style.display = 'none';
+
     // タイマーをリセットして再開
-    seconds = 0; // seconds変数をリセット
-    minutes = 0; // minutes変数をリセット
-    document.getElementById('timer-display').textContent = '00:00'; // 表示をリセット
-    startTimer(); // タイマーを再開
+    seconds = 0;
+    minutes = 0;
+    document.getElementById('timer-display').textContent = '00:00';
+    startTimer();
 
     // 終了ボタンを非表示にする
     document.getElementById('end-button').style.display = 'none';
+
+    // 進捗バーとテキストを更新
+    document.querySelector('.progress-bar').style.width = `${(currentSet / totalSets) * 100}%`;
+    document.getElementById('current-set').textContent = currentSet;
 }
+
+/**
+ * 結果ページを表示する関数
+ */
+function showResultsPage() {
+    document.querySelector('h1').style.display = 'none';
+    document.querySelector('p').style.display = 'none';
+    document.getElementById('timer-container').style.display = 'none';
+    document.getElementById('end-button-container').style.display = 'none';
+    document.querySelector('.container').style.display = 'none';
+
+    document.getElementById('results-page').style.display = 'flex';
+
+    document.getElementById('result-color').textContent = selectedColorIndex;
+    document.getElementById('result-pattern').textContent = selectedPatternIndex;
+    document.getElementById('result-intensity').textContent = selectedIntensityIndex;
+    
+    // 10セット完了後、ボタンの名前を変更
+    if (currentSet === totalSets) {
+        document.getElementById('next-task-button').textContent = 'タスクを終了する';
+    } else {
+        document.getElementById('next-task-button').textContent = '次のタスクへ';
+    }
+}
+
+/**
+ * 最終ページを表示する関数
+ */
+function showFinalPage() {
+    // すべてのUIを非表示にする
+    document.querySelector('h1').style.display = 'none';
+    document.querySelector('p').style.display = 'none';
+    document.getElementById('timer-container').style.display = 'none';
+    document.getElementById('end-button-container').style.display = 'none';
+    document.querySelector('.container').style.display = 'none';
+    document.getElementById('results-page').style.display = 'none'; // 結果ページも非表示にする
+
+    // 最終ページを表示
+    document.getElementById('final-page').style.display = 'flex';
+    document.getElementById('password-display').textContent = 'RobotEye2025'; // パスワードを設定
+}
+
+/**
+ * タイマーのカウントアップを行うための関数
+ */
+// 時間を「00:00」形式にフォーマットする関数
+function formatTime(num) {
+    return num < 10 ? `0${num}` : num;
+}
+// 1秒ごとにタイマーを更新する関数
+function updateTimer() {
+    seconds++;
+    if (seconds === 60) {
+        seconds = 0;
+        minutes++;
+    }
+    const formattedMinutes = formatTime(minutes);
+    const formattedSeconds = formatTime(seconds);
+    timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
+
+    // 1分経過（60秒）後に終了ボタンを表示する
+    // 今はテスト用に2秒
+    if (seconds >= 1 && endButton.style.display === 'none') {
+        endButton.style.display = 'block';
+    }
+}
+// タイマーを開始する関数
+function startTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+// 終了ボタンがクリックされた時の処理
+endButton.addEventListener('click', () => {
+    clearInterval(timerInterval); // タイマーを停止
+    showResultsPage();
+});
+
+// 「次のタスクへ」ボタンがクリックされた時の処理
+nextTaskButton.addEventListener('click', () => {
+    if (currentSet === totalSets) {
+        // 10セット完了後、最終ページを表示する
+        showFinalPage();
+    } else {
+        // まだタスクが残っている場合
+        currentSet++;
+        startMainPage();
+    }
+});
 
 // ページの初期化処理とタイマー機能
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素の取得をこの中に入れる
-    const timerDisplay = document.getElementById('timer-display');
-    const endButton = document.getElementById('end-button'); // 終了ボタンのDOM要素を取得
-    const resultsPage = document.getElementById('results-page'); // 結果ページもここで取得
-    const resultColorSpan = document.getElementById('result-color');
-    const resultPatternSpan = document.getElementById('result-pattern');
-    const resultIntensitySpan = document.getElementById('result-intensity');
-    const nextTaskButton = document.getElementById('next-task-button'); // 「次のタスクへ」ボタンを取得
-
-    //let seconds = 0;
-    //let minutes = 0;
-
-    //let timerInterval;
-
-    // 時間を「00:00」形式にフォーマットする関数
-    function formatTime(num) {
-        return num < 10 ? `0${num}` : num;
-    }
-    // 1秒ごとにタイマーを更新する関数
-    function updateTimer() {
-        seconds++;
-        if (seconds === 60) {
-            seconds = 0;
-            minutes++;
-        }
-        const formattedMinutes = formatTime(minutes);
-        const formattedSeconds = formatTime(seconds);
-        timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
-
-        // 1分経過（60秒）後に終了ボタンを表示する
-        // 今はテスト用に2秒
-        if (seconds >= 2 && endButton.style.display === 'none') {
-            endButton.style.display = 'block';
-        }
-    }
-    // タイマーを開始する関数
-    function startTimer() {
-        if (timerInterval) {
-            clearInterval(timerInterval);
-        }
-        timerInterval = setInterval(updateTimer, 1000);
-    }
-
-    // 終了ボタンがクリックされた時の処理
-    endButton.addEventListener('click', () => {
-        clearInterval(timerInterval); // タイマーを停止
-        showResultsPage();
-    });
-
-    // 「次のタスクへ」ボタンがクリックされた時の処理
-    nextTaskButton.addEventListener('click', () => {
-        returnToMainPage();
-    });
-
-    // 初期処理とタイマーの開始
     positionColorButtons(); // 色ボタンの配置
-    updateLeds('red', 'fade-blink', 3); // 初期表示
-    startTimer(); // タイマーの開始
+    updateLeds('red', 'step-blink', 3); // 初期表示
+    document.querySelector('.progress-bar').style.width = '0%'; // 初回の進捗バーを初期化
+    startMainPage(); // 最初のセットを開始
+
+    
 });
