@@ -7,11 +7,22 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="progress-bar-container">
+        <div class="progress-bar"></div>
+    </div>
+    <div class="progress-text">
+        <span id="current-set">1</span> / <span id="total-sets">10</span>
+    </div>
+    
     <h1>ロボット感情表現実験</h1>
     <p>このロボットの目が「googleフォームに記載している感情」を表現するように設定してください。</p>
 
     <div class="timer-container" id="timer-container">
         <span id="timer-display">00:00</span>
+    </div>
+
+    <div class="end-button-container" id="end-button-container">
+        <button id="end-button" style="display: none;">終了</button>
     </div>
 
     <div class="container">
@@ -50,6 +61,27 @@
                 <input type="range" id="intensity" min="1" max="5" value="3" oninput="setIntensity()">
             </div>
         </div>
+    </div>
+
+    <div class="end-button-container" id="end-button-container">
+        <button id="end-button" style="display: none;">終了</button>
+    </div>
+    
+    <div id="results-page" style="display: none;">
+        <h2>設定結果</h2>
+        <p>・選択した色：<span id="result-color"></span></p>
+        <p>・選択した発光パターン：<span id="result-pattern"></span></p>
+        <p>・選択した速さ：<span id="result-intensity"></span></p>
+        <p>・確認コード：<span id="check-code"></span></p>
+
+        <button id="next-task-button">次のタスクへ</button>
+    </div>
+
+    <div id="final-page" style="display: none;">
+        <h2>ご協力ありがとうございました。</h2>
+        <p>Googleフォームで以下のパスワードを入力してください。</p>
+        <p>パスワード：<span id="password-display"></span></p>
+        <p>パスワード入力後はこの画面を閉じても大丈夫です。</p>
     </div>
 
     <script src="script.js"></script>
