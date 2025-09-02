@@ -45,7 +45,7 @@ body {
     width: 300px;
     height: 400px;
     position: relative;
-    background-image: url('https://raw.githubusercontent.com/Akari-Sakuta/robot-project-assets/main/robot_body.png'); /* 3D画像を背景に設定 */
+    background-image: url('robot_body.png'); /* 3D画像を背景に設定 */
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
@@ -97,9 +97,9 @@ body {
 /* 黒目（瞳孔） */
 .eye::after {
     content: '';
-    width: 26px;
-    height: 26px;
-    background-color: rgb(30, 30, 30);
+    width: 24px;
+    height: 24px;
+    background-color: rgb(40, 40, 40);
     border-radius: 50%;
     position: absolute;
     top: 50%;
@@ -313,4 +313,154 @@ LEDアニメーションの定義
 
 .led.rotate, .led.split-drop, .led.split-up {
     border: none;
+}
+
+/* 進捗バーのコンテナ */
+.progress-bar-container {
+    width: 80%;
+    height: 20px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px auto 10px;
+}
+
+/* 進捗バー本体 */
+.progress-bar {
+    height: 100%;
+    width: 0;
+    background-color: #4caf50;
+    transition: width 0.5s ease-in-out;
+}
+
+/* 進捗テキスト */
+.progress-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* 終了ボタンのコンテナスタイル */
+.end-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+#end-button {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#end-button:hover {
+    background-color: #45a049;
+}
+
+/* 設定結果の表示スタイル */
+#results-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    display: flex; /* Flexboxを有効にする */
+    flex-direction: column; /* 項目を縦方向に並べる */
+    justify-content: center; /* 垂直方向の中央揃え */
+    align-items: center; /* 水平方向の中央揃え */
+    z-index: 1001;
+    text-align: left; /* テキストは左揃えを維持 */
+}
+#results-page h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    /* 中央揃えの親要素内で左揃えにするため、幅を設定しmargin: auto 0; で中央寄せする */
+    width: 300px; /* テキストブロックの幅を固定 (必要に応じて調整) */
+    text-align: center; /* h2自体は中央揃え */
+}
+#results-page p {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    width: 300px; /* テキストブロックの幅を固定 (h2と同じか調整) */
+    text-align: left; /* pタグ内のテキストは左揃え */
+}
+
+#results-page button {
+    margin-top: 20px; /* ボタンと上の要素との間に余白 */
+}
+
+/* 「次のタスクへ」ボタンの表示 */
+#next-task-button {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    margin-top: 30px; /* 他の要素との間に余白を作成 */
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#next-task-button:hover {
+    background-color: #0056b3;
+    margin-top: 20px; /* ボタンと上の要素との間に余白 */
+
+}
+
+/* 最終ページ */
+#final-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 1001;
+    font-size: 1.5rem; /* 最終ページ全体の文字を大きくする */
+}
+
+#final-page h2 {
+    font-size: 2.5rem; /* 見出しの文字をさらに大きくする */
+    margin-bottom: 20px;
+}
+
+#final-page p {
+    font-size: 1.5rem; /* 段落の文字を調整 */
+    margin-bottom: 10px;
+}
+
+/* プログレスバーのコンテナ */
+.progress-bar-container {
+    width: 50%;
+    height: 10px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px auto 10px;
+}
+
+/* プログレスバー本体 */
+.progress-bar {
+    height: 100%;
+    width: 0;
+    background-color: #4caf50;
+    transition: width 0.5s ease-in-out;
+}
+
+/* 進捗テキスト */
+.progress-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
 }
