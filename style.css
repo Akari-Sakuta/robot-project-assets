@@ -7,19 +7,25 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
+    justify-content: flex-start; /* ★ 修正点: コンテンツを上部に寄せる */
+    min-height: 100vh; /* 画面いっぱいに広げる */
     background-color: #f0f0f0;
     margin: 0;
     text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden; /* ★ 修正点: 水平方向のスクロールを無効にする */
 }
+
 /* ロボットとコントロールパネルのコンテナ */
 .container {
     display: flex;
+    flex-direction: row; /* ★ 修正点: 横に並べる */
     align-items: center;
     justify-content: center;
-    gap: 50px;
-    margin-top: 20px;
+    gap: 50px; /* ★ 修正点: 要素間の間隔を調整 */
+    margin: 40px auto; /* ★ 修正点: 上下のマージンを調整 */
+    flex-wrap: wrap; /* ★ 修正点: 画面幅が狭い場合は折り返す */
 }
 
 /* タイマーコンテナのスタイル */
@@ -27,7 +33,7 @@ body {
     position: fixed; /* 画面に固定 */
     top: 20px; /* 上からの距離 */
     right: 20px; /* 右からの距離 */
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(255, 255, 255);
     padding: 10px 15px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -36,6 +42,15 @@ body {
     z-index: 1000; /* 他の要素より手前に表示 */
 }
 
+/* pタグ全体の文字サイズを大きくする */
+p {
+    font-size: 1.2rem;
+}
+
+/* 太字にする部分のスタイル */
+.emotion-text-bold {
+    font-weight: bold;
+}
 
 /* ====================
 ロボットのデザイン
@@ -54,11 +69,6 @@ body {
     align-items: center;
     justify-content: flex-start;
     padding-top: 50px;
-}
-
-/* 顔、胴体、鼻は画像に置き換えるため、既存の要素は非表示または削除 */
-.head, .body, .nose {
-    display: none;
 }
 
 /* 目の位置とサイズ調整 */
@@ -99,7 +109,7 @@ body {
     content: '';
     width: 24px;
     height: 24px;
-    background-color: rgb(40, 40, 40);
+    background-color: rgb(30, 30, 30);
     border-radius: 50%;
     position: absolute;
     top: 50%;
@@ -132,6 +142,7 @@ body {
     border: 1px solid #ccc;
     border-radius: 8px;
     background-color: #fff;
+    flex-shrink: 0; /* ★ 修正点: 縮小されないようにする */
 }
 .control-group {
     display: flex;
@@ -361,6 +372,27 @@ LEDアニメーションの定義
     background-color: #45a049;
 }
 
+/* 「戻る」ボタンのコンテナ */
+.back-button-container {
+    position: fixed; /* 画面に固定 */
+    bottom: 20px; /* 下からの距離 */
+    left: 20px; /* 左からの距離 */
+    z-index: 1002; /* 他の要素より手前に表示 */
+}
+#back-button {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #f48236; /* ボタンの色 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#back-button:hover {
+    background-color: #d37e2f; /* ホバー時の色 */
+}
+
 /* 設定結果の表示スタイル */
 #results-page {
     position: fixed;
@@ -431,13 +463,13 @@ LEDアニメーションの定義
 }
 
 #final-page h2 {
-    font-size: 2.5rem; /* 見出しの文字をさらに大きくする */
-    margin-bottom: 20px;
+    font-size: 2rem; /* 見出しの文字をさらに大きくする */
+    margin-bottom: 30px;
 }
 
 #final-page p {
-    font-size: 1.5rem; /* 段落の文字を調整 */
-    margin-bottom: 10px;
+    font-size: 1.2rem; /* 段落の文字を調整 */
+    margin: 5px 0;
 }
 
 /* プログレスバーのコンテナ */
@@ -449,7 +481,6 @@ LEDアニメーションの定義
     overflow: hidden;
     margin: 20px auto 10px;
 }
-
 /* プログレスバー本体 */
 .progress-bar {
     height: 100%;
@@ -457,7 +488,6 @@ LEDアニメーションの定義
     background-color: #4caf50;
     transition: width 0.5s ease-in-out;
 }
-
 /* 進捗テキスト */
 .progress-text {
     font-size: 1.2rem;
