@@ -14,9 +14,12 @@
         <span id="current-set">1</span> / <span id="total-sets">10</span>
     </div>
     
-    <h1>ロボット感情表現実験</h1>
-    <p>このロボットの目が「googleフォームに記載している感情」を表現するように設定してください。</p>
+    <div class="back-button-container">
+        <button id="back-button">戻る</button>
+    </div>
 
+    <h1>ロボット感情表現実験</h1>
+    <p>このロボットの目が「<span id="emotion-text" class="emotion-text-bold">googleフォームに記載している感情</span>」を表現するように設定してください。</p>
     <div class="timer-container" id="timer-container">
         <span id="timer-display">00:00</span>
     </div>
@@ -57,14 +60,10 @@
             </div>
             <hr>
             <div class="control-group">
-                <label for="intensity">速さ (<span id="intensity-value">3</span>)</label>
-                <input type="range" id="intensity" min="1" max="5" value="3" oninput="setIntensity()">
+                <label for="intensity">速さ (<span id="intensity-value">5</span>)</label>
+                <input type="range" id="intensity" min="1" max="10" value="5" oninput="setIntensity()">
             </div>
         </div>
-    </div>
-
-    <div class="end-button-container" id="end-button-container">
-        <button id="end-button" style="display: none;">終了</button>
     </div>
     
     <div id="results-page" style="display: none;">
@@ -72,16 +71,18 @@
         <p>・選択した色：<span id="result-color"></span></p>
         <p>・選択した発光パターン：<span id="result-pattern"></span></p>
         <p>・選択した速さ：<span id="result-intensity"></span></p>
-        <p>・確認コード：<span id="check-code"></span></p>
-
+        
         <button id="next-task-button">次のタスクへ</button>
     </div>
 
     <div id="final-page" style="display: none;">
         <h2>ご協力ありがとうございました。</h2>
         <p>Googleフォームで以下のパスワードを入力してください。</p>
+        <p></p>
         <p>パスワード：<span id="password-display"></span></p>
-        <p>パスワード入力後はこの画面を閉じても大丈夫です。</p>
+        <p></p>
+        <p>パスワードを入力するまで、このページを閉じないでください。</p>
+        <p>※一度このページを閉じると、上記のパスワードは表示できません。</p>
     </div>
 
     <script src="script.js"></script>
