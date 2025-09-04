@@ -26,7 +26,7 @@ const colorMap = {
 // 初期値は、ページの初期表示値に合わせて設定する
 let selectedColorIndex = 1;
 let selectedPatternIndex = 1;
-let selectedIntensityIndex = 3;
+let selectedIntensityIndex = 5;
 
 // DOM要素の取得: タイマー機能
 const timerDisplay = document.getElementById('timer-display');
@@ -339,7 +339,7 @@ function updateTimer() {
         }
     } else {
         // 30秒後に終了ボタンを表示する
-        if (seconds >= 3 && endButton.style.display === 'none') {
+        if (seconds >= 30 && endButton.style.display === 'none') {
             endButton.style.display = 'block';
         }
     }
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     positionColorButtons(); // 色ボタンの配置
-    updateLeds('red', 'step-blink', 3); // 初期表示
+    updateLeds('red', 'step-blink', 5); // 初期表示
     document.querySelector('.progress-bar').style.width = '0%'; // 初回の進捗バーを初期化
     startMainPage(); // 最初のセットを開始 
 });
