@@ -28,6 +28,9 @@ let selectedColorIndex = 1;
 let selectedPatternIndex = 1;
 let selectedIntensityIndex = 5;
 
+// 選択項目を一時的に保存する配列
+const savedSelections = [];
+
 // DOM要素の取得: タイマー機能
 const timerDisplay = document.getElementById('timer-display');
 let seconds = 0;
@@ -60,6 +63,29 @@ const resultIntensitySpan = document.getElementById('result-intensity');
 let endButton;
 let nextTaskButton;
 let backButton;
+
+// Googleフォームの項目IDとURLを定義
+const GOOGLE_FORM_URL = 'https://docs.google.com/forms/u/0/d/e/1FAIpQLSfq_hRIW0YguOmrTz_N_01j5Yl2PspdSc5IMLgpXhIxZ4B3fg/formResponse';
+
+// 各タスク（感情）ごとの質問IDをオブジェクトにまとめて管理
+const GOOGLE_FORM_ENTRIES = {
+    '怒り': { color: 'entry.491303356', pattern: 'entry.409806865', intensity: 'entry.1878336323' },
+    '緑、点滅(チカチカ)、速さ4': { color: 'entry.1204286337', pattern: 'entry.802237711', intensity: 'entry.1801506477' },
+    '恐れ': { color: 'entry.777098917', pattern: 'entry.589697965', intensity: 'entry.2113351545' },
+    '信頼': { color: 'entry.1742265329', pattern: 'entry.245111734', intensity: 'entry.2028868153' },
+    '嫌悪': { color: 'entry.350150990', pattern: 'entry.1570778382', intensity: 'entry.833062927' },
+    '驚き': { color: 'entry.286520453', pattern: 'entry.102870304', intensity: 'entry.1927795365' },
+    '期待': { color: 'entry.652292470', pattern: 'entry.585916459', intensity: 'entry.944012706' },
+    '赤、下へ流れる、速さ2': { color: 'entry.512180379', pattern: 'entry.2063122289', intensity: 'entry.1130457384' },
+    '悲しみ': { color: 'entry.996065062', pattern: 'entry.5850225', intensity: 'entry.1817038972' },
+    '喜び': { color: 'entry.1073520370', pattern: 'entry.1512407861', intensity: 'entry.1185022503' }
+};
+
+// 参加者情報の質問IDも追加する必要があります。
+const PARTICIPANT_FORM_ENTRIES = {
+    age: 'entry.AGE_ID',
+    gender: 'entry.GENDER_ID'
+};
 
 /**
  * 色選択ボタンを色相環状に配置する関数
@@ -233,13 +259,10 @@ function startMainPage() {
     document.getElementById('timer-container').style.display = 'block';
     document.getElementById('end-button-container').style.display = 'block';
     document.querySelector('.container').style.display = 'flex';
-
-    // 結果ページを非表示にする
-    document.getElementById('results-page').style.display = 'none';
-
-    // 戻るボタンのコンテナを表示する
     document.querySelector('.back-button-container').style.display = 'block';
-
+    // 結果ページと最終ページを非表示にする
+    document.getElementById('results-page').style.display = 'none';
+    document.getElementById('final-page').style.display = 'none';
     // 終了ボタンを非表示にする
     document.getElementById('end-button').style.display = 'none';
 
@@ -259,6 +282,24 @@ function startMainPage() {
         // currentSet-1 をインデックスとして使用（0から始まる配列のため）
         emotionTextSpan.textContent = emotionList[currentSet - 1];
     }
+
+    // ここでUIの状態を復元する
+    const currentSelection = savedSelections[currentSet - 1];
+    const prevColorName = colors[currentSelection.color - 1];
+    const prevPatternValue = document.getElementById('pattern').options[currentSelection.pattern - 1].value;
+    const prevIntensityValue = currentSelection.intensity;
+
+    // UI要素の値を設定
+    currentColor = prevColorName;
+    selectedColorIndex = currentSelection.color;
+    selectedPatternIndex = currentSelection.pattern;
+    selectedIntensityIndex = prevIntensityValue;
+    document.getElementById('pattern').value = prevPatternValue;
+    document.getElementById('intensity').value = prevIntensityValue;
+    intensityValueSpan.textContent = prevIntensityValue;
+
+    // ロボットの目を更新
+    updateLeds(prevColorName, prevPatternValue, prevIntensityValue);
 }
 
 /**
@@ -315,6 +356,37 @@ function showFinalPage() {
 }
 
 /**
+ * データをGoogleフォームに送信する関数
+ */
+function sendDataToGoogleForm(allData) {
+    const dataToSend = {};
+
+    for (let i = 0; i < allData.length; i++) {
+        const currentTask = allData[i];
+        const emotion = emotionList[i];
+        const entries = GOOGLE_FORM_ENTRIES[emotion];
+
+        dataToSend[entries.color] = currentTask.color;
+        dataToSend[entries.pattern] = currentTask.pattern;
+        dataToSend[entries.intensity] = currentTask.intensity;
+    }
+
+    const params = new URLSearchParams(dataToSend);
+    const url = `${GOOGLE_FORM_URL}?${params.toString()}`;
+
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors'
+    })
+    .then(() => {
+        console.log('すべてのデータ送信に成功しました。');
+    })
+    .catch(error => {
+        console.error('データ送信中にエラーが発生しました:', error);
+    });
+}
+
+/**
  * タイマーのカウントアップを行うための関数
  */
 // 時間を「00:00」形式にフォーマットする関数
@@ -339,7 +411,7 @@ function updateTimer() {
         }
     } else {
         // 30秒後に終了ボタンを表示する
-        if (seconds >= 30 && endButton.style.display === 'none') {
+        if (seconds >= 1 && endButton.style.display === 'none') {
             endButton.style.display = 'block';
         }
     }
@@ -352,57 +424,78 @@ function startTimer() {
     timerInterval = setInterval(updateTimer, 1000);
 }
 
-// ページの初期化処理とタイマー機能
+/**
+ *ページの初期化処理とタイマー機能
+ */ 
 document.addEventListener('DOMContentLoaded', () => {
     endButton = document.getElementById('end-button');
     nextTaskButton = document.getElementById('next-task-button');
     backButton = document.getElementById('back-button');
 
-// 「戻る」ボタンがクリックされた時の処理
+    // savedSelections配列を初期値で埋める
+    for (let i = 0; i < totalSets; i++) {
+        savedSelections.push({
+            color: 1, // 初期の色: 赤
+            pattern: 1, // 初期の発光パターン: 点滅（チカチカ）
+            intensity: 5  // 初期の発光速度: 5
+        });
+    }
+
+    // 「戻る」ボタンがクリックされた時の処理
     backButton.addEventListener('click', () => {
         const isResultsPageVisible = document.getElementById('results-page').style.display === 'flex';
-        const isFinalPageVisible = document.getElementById('final-page').style.display === 'flex'; // 最終ページの状態を取得
+        const isFinalPageVisible = document.getElementById('final-page').style.display === 'flex';
 
-        if (isFinalPageVisible) {
-            // 最終ページが表示されている場合、結果ページに戻る
-            showResultsPage();
-        } else if (isResultsPageVisible) {
-            // 結果ページが表示されている場合、メインページに戻る
-            startMainPage();
-            endButton.style.display = 'block';
+        if (isResultsPageVisible) {
+            // 結果ページからメインページに戻る
+            startMainPage();        
+        } else if (isFinalPageVisible) {
+            showResultsPage(); // 最終ページから結果ページに戻る
         } else {
-            // メインページが表示されている場合
+            // メインページから前のタスクの結果ページに戻る
             if (currentSet > 1) {
-                // 進捗を1つ巻き戻し、前のセットの結果ページに戻る
                 currentSet--;
                 showResultsPage();
             } else {
-                // 最初のセットの場合はこれ以上戻れない
                 alert("これ以上戻るタスクはありません。");
             }
         }
     });
 
-    // 「終了」ボタンがクリックされた時の処理
+    // 「選択を終える」ボタンがクリックされた時の処理
     endButton.addEventListener('click', () => {
-        clearInterval(timerInterval); // タイマーを停止
+        // 現在の選択内容を保存
+        const currentTaskData = {
+            color: selectedColorIndex,
+            pattern: selectedPatternIndex,
+            intensity: selectedIntensityIndex
+        };
+        savedSelections[currentSet - 1] = currentTaskData; // ここで上書き
+
+        clearInterval(timerInterval);
         showResultsPage();
     });
 
     // 「次のタスクへ」ボタンがクリックされた時の処理
     nextTaskButton.addEventListener('click', () => {
+        const currentTaskData = {
+            color: selectedColorIndex,
+            pattern: selectedPatternIndex,
+            intensity: selectedIntensityIndex
+        };
+        savedSelections[currentSet - 1] = currentTaskData;
+
         if (currentSet === totalSets) {
-            // 10セット完了後、最終ページを表示する
+            sendDataToGoogleForm(savedSelections);
             showFinalPage();
         } else {
-            // まだタスクが残っている場合
             currentSet++;
-            startMainPage();
+            startMainPage(); // この関数が復元も担当する
         }
     });
 
-    positionColorButtons(); // 色ボタンの配置
-    updateLeds('red', 'step-blink', 5); // 初期表示
-    document.querySelector('.progress-bar').style.width = '0%'; // 初回の進捗バーを初期化
-    startMainPage(); // 最初のセットを開始 
+    positionColorButtons();
+    //updateLeds('red', 'step-blink', 5);
+    //document.querySelector('.progress-bar').style.width = '0%';
+    startMainPage();
 });
